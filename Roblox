@@ -1,0 +1,1009 @@
+--[[
+    ██╗     ██╗   ██╗奎   ██╗   ██╗██╗███╗   ██╗██╗  ██╗ █████╗ ███████╗
+    ██║     ██║   ██║   ██║   ██║██║████╗  ██║██║  ██║██╔══██╗██╔════╝
+    ██║     ██║   ██║   ██║   ██║██║██╔██╗ ██║███████║███████║███████╗
+    ██║     ██║   ██║   ██║   ██║██║██║╚██╗██║██╔══██║██╔══██║╚════██║
+    ███████╗╚██████╔╝██╗╚██████╔╝██║██║ ╚████║██║  ██║██║  ██║███████║
+    ╚══════╝ ╚═════╝ ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+    
+    ██╗  ██╗██╗   ██╗██████╗ 
+    ██║  ██║██║   ██║██╔══██╗
+    ███████║██║   ██║██████╔╝
+    ██╔══██║██║   ██║██╔══██╗
+    ██║  ██║╚██████╔╝██████╔╝
+    ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ 
+    
+    Versão: 1.0
+    Criado por: Luquinhas
+    Suporte: Blox Fruits
+--]]
+
+-- Verificar executor
+local executor = "Desconhecido"
+if syn then executor = "Synapse X" 
+elseif krnl then executor = "Krnl" 
+elseif fluxus then executor = "Fluxus" 
+elseif script_context then executor = "Solara" 
+elseif iswindow then executor = "Delta" 
+end
+
+-- ========== CONFIGURAÇÕES INICIAIS ==========
+local player = game:GetService("Players").LocalPlayer
+local teleportService = game:GetService("TeleportService")
+local tweenService = game:GetService("TweenService")
+local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
+local virtualUser = game:GetService("VirtualUser")
+
+-- Variáveis globais
+local toggles = {
+    AutoFarm = false,
+    AutoFarmLevel = false,
+    AutoCollect = false,
+    AutoBuyFruit = false,
+    AutoRaid = false,
+    AutoSeaBeast = false,
+    AutoAwakening = false,
+    AutoEliteHunt = false,
+    AutoChest = false,
+    AutoBuso = false,
+    AutoObservation = false,
+    AutoDFMax = false,
+    AutoBounty = false,
+    AutoKillPlayer = false,
+    AutoEvoRace = false,
+    AutoFruitSnip = false,
+    AutoMastery = false,
+    AutoGunMastery = false,
+    AutoSwordMastery = false,
+    AutoFruitMastery = false,
+    AutoFightingStyleMastery = false,
+    AutoBoneFarm = false,
+    AutoFragFarm = false
+}
+
+local settings = {
+    TeleportDelay = 1,
+    SelectedFruit = "Buddha",
+    SelectedSword = "True Triple Katana",
+    SelectedGun = "Acidum",
+    SelectedStyle = "Electric Claw",
+    SelectedRace = "Human",
+    SelectedStat = "Melee",
+    FarmRadius = 250,
+    HealAt = 30,
+    TargetLevel = 2550,
+    AutoStatPoints = true,
+    AutoSkillPoints = true,
+    SafeMode = false,
+    WebhookURL = ""
+}
+
+-- ========== FUNÇÕES AUXILIARES ==========
+local function getLocalPlayer()
+    return player
+end
+
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+local function getHumanoid()
+    local char = getCharacter()
+    return char and char:FindFirstChild("Humanoid")
+end
+
+local function getHumanoidRootPart()
+    local char = getCharacter()
+    return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+local function teleportTo(position)
+    local hrp = getHumanoidRootPart()
+    if hrp then
+        hrp.CFrame = position
+    end
+end
+
+local function getClosestNPC()
+    local closest = nil
+    local shortestDist = math.huge
+    local hrp = getHumanoidRootPart()
+    
+    if not hrp then return nil end
+    
+    for _, npc in pairs(workspace.NPCs:GetChildren()) do
+        if npc:FindFirstChild("HumanoidRootPart") and npc.Humanoid.Health > 0 then
+            local dist = (hrp.Position - npc.HumanoidRootPart.Position).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                closest = npc
+            end
+        end
+    end
+    return closest
+end
+
+local function combatCheck()
+    if not toggles.AutoFarm then return end
+    local npc = getClosestNPC()
+    if npc then
+        teleportTo(npc.HumanoidRootPart.CFrame)
+    end
+end
+
+local function autoHeal()
+    local humanoid = getHumanoid()
+    if humanoid and humanoid.Health <= settings.HealAt then
+        local args = {[1] = "Reset"}
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+    end
+end
+
+local function levelUpCheck()
+    local args = {[1] = "LevelUp"}
+    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+end
+
+-- ========== SISTEMA DE FARM ==========
+local function autoFarm()
+    while toggles.AutoFarm and runService.RenderStepped:Wait() do
+        pcall(function()
+            autoHeal()
+            levelUpCheck()
+            
+            local npc = getClosestNPC()
+            if npc and npc.Humanoid.Health > 0 then
+                local hrp = getHumanoidRootPart()
+                if hrp then
+                    hrp.CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 2, 4)
+                end
+            end
+        end)
+    end
+end
+
+local function autoFarmLevel()
+    while toggles.AutoFarmLevel and runService.RenderStepped:Wait() do
+        pcall(function()
+            autoHeal()
+            
+            -- Get current level
+            local level = player.Data.Level.Value
+            if level >= settings.TargetLevel then
+                toggles.AutoFarmLevel = false
+                break
+            end
+            
+            -- Find NPC for current level range
+            local targetNPC = nil
+            for _, npc in pairs(workspace.NPCs:GetChildren()) do
+                if npc:FindFirstChild("HumanoidRootPart") and 
+                   npc:FindFirstChild("Humanoid") and 
+                   npc.Humanoid.Health > 0 then
+                    -- Check if NPC is appropriate for level
+                    local requiredLevel = npc:FindFirstChild("Level")
+                    if requiredLevel and requiredLevel.Value <= level + 50 then
+                        targetNPC = npc
+                        break
+                    end
+                end
+            end
+            
+            if targetNPC then
+                local hrp = getHumanoidRootPart()
+                if hrp then
+                    hrp.CFrame = targetNPC.HumanoidRootPart.CFrame * CFrame.new(0, 2, 4)
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO COLLECT (Fruits/Materials) ==========
+local function autoCollect()
+    while toggles.AutoCollect and runService.RenderStepped:Wait() do
+        pcall(function()
+            -- Collect fruits
+            for _, fruit in pairs(workspace:GetDescendants()) do
+                if fruit:IsA("Model") and fruit:FindFirstChild("Handle") then
+                    local hrp = getHumanoidRootPart()
+                    if hrp and (hrp.Position - fruit.Handle.Position).Magnitude < 50 then
+                        fruit.Handle.CFrame = hrp.CFrame
+                    end
+                end
+            end
+            
+            -- Collect materials
+            for _, material in pairs(workspace:GetDescendants()) do
+                if material:IsA("Part") and material.Name:find("Material") then
+                    local hrp = getHumanoidRootPart()
+                    if hrp and (hrp.Position - material.Position).Magnitude < 30 then
+                        firetouchinterest(hrp, material, 0)
+                        firetouchinterest(hrp, material, 1)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO RAID ==========
+local function autoRaid()
+    while toggles.AutoRaid and runService.RenderStepped:Wait() do
+        pcall(function()
+            local args = {[1] = "Raids", [2] = "Start"}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            wait(5)
+            
+            -- Auto kill enemies in raid
+            for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+                if enemy:FindFirstChild("HumanoidRootPart") and enemy.Humanoid.Health > 0 then
+                    local hrp = getHumanoidRootPart()
+                    if hrp then
+                        hrp.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 2, 4)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO SEA BEAST ==========
+local function autoSeaBeast()
+    while toggles.AutoSeaBeast and runService.RenderStepped:Wait() do
+        pcall(function()
+            for _, beast in pairs(workspace:GetDescendants()) do
+                if beast.Name == "SeaBeast" and beast:FindFirstChild("HumanoidRootPart") then
+                    local hrp = getHumanoidRootPart()
+                    if hrp then
+                        hrp.CFrame = beast.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO AWAKENING ==========
+local function autoAwakening()
+    while toggles.AutoAwakening and runService.RenderStepped:Wait() do
+        pcall(function()
+            -- Complete awakened raids
+            local args = {[1] = "Awakening", [2] = "Start"}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            wait(5)
+            
+            -- Auto complete puzzles
+            for _, puzzle in pairs(workspace:GetDescendants()) do
+                if puzzle.Name == "AwakeningPuzzle" then
+                    fireclickdetector(puzzle:FindFirstChild("ClickDetector"))
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO ELITE HUNT ==========
+local function autoEliteHunt()
+    while toggles.AutoEliteHunt and runService.RenderStepped:Wait() do
+        pcall(function()
+            local args = {[1] = "EliteHunt", [2] = "Start"}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            
+            -- Teleport to elite NPC location
+            local eliteNPC = workspace.NPCs:FindFirstChild("Elite")
+            if eliteNPC and eliteNPC:FindFirstChild("HumanoidRootPart") then
+                local hrp = getHumanoidRootPart()
+                if hrp then
+                    hrp.CFrame = eliteNPC.HumanoidRootPart.CFrame * CFrame.new(0, 2, 5)
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO CHEST FARM ==========
+local function autoChest()
+    while toggles.AutoChest and runService.RenderStepped:Wait() do
+        pcall(function()
+            for _, chest in pairs(workspace:GetDescendants()) do
+                if chest:IsA("Model") and (chest.Name == "Chest" or chest.Name:find("Chest")) then
+                    if chest:FindFirstChild("ClickDetector") then
+                        fireclickdetector(chest.ClickDetector)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO BUSO HAKI ==========
+local function autoBuso()
+    while toggles.AutoBuso and runService.RenderStepped:Wait() do
+        pcall(function()
+            local args = {[1] = "Buso"}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            wait(60)
+        end)
+    end
+end
+
+-- ========== AUTO OBSERVATION HAKI ==========
+local function autoObservation()
+    while toggles.AutoObservation and runService.RenderStepped:Wait() do
+        pcall(function()
+            local args = {[1] = "Observation"}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            wait(60)
+        end)
+    end
+end
+
+-- ========== AUTO DF MAX ==========
+local function autoDFMax()
+    while toggles.AutoDFMax and runService.RenderStepped:Wait() do
+        pcall(function()
+            -- Farm fragments for DF max
+            autoFragFarm()
+            
+            -- Buy fruit from dealer
+            local args = {[1] = "Buy", [2] = settings.SelectedFruit}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            wait(5)
+        end)
+    end
+end
+
+-- ========== AUTO BOUNTY HUNTER ==========
+local function autoBounty()
+    while toggles.AutoBounty and runService.RenderStepped:Wait() do
+        pcall(function()
+            for _, target in pairs(game:GetService("Players"):GetPlayers()) do
+                if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = getHumanoidRootPart()
+                    if hrp then
+                        hrp.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO KILL PLAYER ==========
+local function autoKillPlayer()
+    while toggles.AutoKillPlayer and runService.RenderStepped:Wait() do
+        pcall(function()
+            local args = {[1] = "GetPlayers"}
+            local players = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            
+            for _, targetName in pairs(players) do
+                local target = game:GetService("Players"):FindFirstChild(targetName)
+                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = getHumanoidRootPart()
+                    if hrp then
+                        hrp.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- ========== AUTO EVOLVE RACE ==========
+local function autoEvoRace()
+    while toggles.AutoEvoRace and runService.RenderStepped:Wait() do
+        pcall(function()
+            local args = {[1] = "EvolveRace", [2] = settings.SelectedRace}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            wait(60)
+        end)
+    end
+end
+
+-- ========== AUTO FRUIT SNIPING ==========
+local function autoFruitSnip()
+    while toggles.AutoFruitSnip and runService.RenderStepped:Wait() do
+        pcall(function()
+            -- Check stock
+            local args = {[1] = "GetStock"}
+            local stock = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            
+            -- Buy if rare fruit in stock
+            if stock and stock["Kitsune"] > 0 then
+                local argsBuy = {[1] = "Buy", [2] = "Kitsune"}
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(argsBuy))
+            end
+        end)
+    end
+end
+
+-- ========== AUTO MASTERY FARM ==========
+local function autoMastery()
+    while toggles.AutoMastery and runService.RenderStepped:Wait() do
+        pcall(function()
+            autoFarm()
+            -- Auto equip best items for mastery
+            local args = {[1] = "Equip", [2] = settings.SelectedSword}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+        end)
+    end
+end
+
+local function autoGunMastery()
+    while toggles.AutoGunMastery and runService.RenderStepped:Wait() do
+        pcall(function()
+            autoFarm()
+            local args = {[1] = "Equip", [2] = settings.SelectedGun}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+        end)
+    end
+end
+
+local function autoSwordMastery()
+    while toggles.AutoSwordMastery and runService.RenderStepped:Wait() do
+        pcall(function()
+            autoFarm()
+            local args = {[1] = "Equip", [2] = settings.SelectedSword}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+        end)
+    end
+end
+
+local function autoFruitMastery()
+    while toggles.AutoFruitMastery and runService.RenderStepped:Wait() do
+        pcall(function()
+            autoFarm()
+            -- Equip selected fruit
+            local args = {[1] = "Equip", [2] = settings.SelectedFruit}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+        end)
+    end
+end
+
+local function autoFightingStyleMastery()
+    while toggles.AutoFightingStyleMastery and runService.RenderStepped:Wait() do
+        pcall(function()
+            autoFarm()
+            local args = {[1] = "Equip", [2] = settings.SelectedStyle}
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+        end)
+    end
+end
+
+-- ========== AUTO BONE FARM ==========
+local function autoBoneFarm()
+    while toggles.AutoBoneFarm and runService.RenderStepped:Wait() do
+        pcall(function()
+            -- Farm bones from NPCs
+            autoFarm()
+            
+            -- Exchange bones
+            local args = {[1] = "Bones", [2] = "Check"}
+            local bones = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            
+            if bones and bones > 10 then
+                local argsExchange = {[1] = "Bones", [2] = "Exchange"}
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(argsExchange))
+            end
+        end)
+    end
+end
+
+-- ========== AUTO FRAGMENT FARM ==========
+local function autoFragFarm()
+    while toggles.AutoFragFarm and runService.RenderStepped:Wait() do
+        pcall(function()
+            -- Farm fragments from raids
+            autoRaid()
+            
+            -- Exchange fragments
+            local args = {[1] = "Fragments", [2] = "Check"}
+            local frags = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            
+            if frags and frags > 100 then
+                local argsExchange = {[1] = "Fragments", [2] = "Exchange"}
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(argsExchange))
+            end
+        end)
+    end
+end
+
+-- ========== UI DA LUQUINHAS HUB ==========
+local function createUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "LuquinhasHub"
+    screenGui.Parent = game:GetService("CoreGui")
+    
+    -- Main Frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 500, 0, 600)
+    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -300)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    mainFrame.BackgroundTransparency = 0.05
+    mainFrame.BorderSizePixel = 0
+    mainFrame.ClipsDescendants = true
+    mainFrame.Parent = screenGui
+    
+    -- Gradient
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 50)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 30))
+    }
+    gradient.Parent = mainFrame
+    
+    -- Corner rounding
+    local corners = Instance.new("UICorner")
+    corners.CornerRadius = UDim.new(0, 12)
+    corners.Parent = mainFrame
+    
+    -- Stroke/Border
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(100, 100, 120)
+    stroke.Thickness = 1
+    stroke.Parent = mainFrame
+    
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 50)
+    titleBar.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+    titleBar.BackgroundTransparency = 0.1
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleCorners = Instance.new("UICorner")
+    titleCorners.CornerRadius = UDim.new(0, 12)
+    titleCorners.Parent = titleBar
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Size = UDim2.new(1, -80, 1, 0)
+    titleText.Position = UDim2.new(0, 20, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "🐉 LUQUINHAS HUB 🐉"
+    titleText.TextColor3 = Color3.fromRGB(255, 215, 0)
+    titleText.TextSize = 24
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Font = Enum.Font.GothamBold
+    titleText.Parent = titleBar
+    
+    -- Version text
+    local versionText = Instance.new("TextLabel")
+    versionText.Size = UDim2.new(0, 100, 1, 0)
+    versionText.Position = UDim2.new(1, -110, 0, 0)
+    versionText.BackgroundTransparency = 1
+    versionText.Text = "v1.0"
+    versionText.TextColor3 = Color3.fromRGB(150, 150, 170)
+    versionText.TextSize = 14
+    versionText.TextXAlignment = Enum.TextXAlignment.Right
+    versionText.Font = Enum.Font.Gotham
+    versionText.Parent = titleBar
+    
+    -- Close button
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -40, 0, 10)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.TextSize = 18
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Parent = titleBar
+    
+    local btnCorners = Instance.new("UICorner")
+    btnCorners.CornerRadius = UDim.new(0, 6)
+    btnCorners.Parent = closeBtn
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- Tab buttons container
+    local tabContainer = Instance.new("Frame")
+    tabContainer.Size = UDim2.new(1, 0, 0, 40)
+    tabContainer.Position = UDim2.new(0, 0, 0, 50)
+    tabContainer.BackgroundTransparency = 1
+    tabContainer.Parent = mainFrame
+    
+    -- Content container
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Size = UDim2.new(1, -20, 1, -110)
+    contentFrame.Position = UDim2.new(0, 10, 0, 100)
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Parent = mainFrame
+    
+    -- Create scroll frame for content
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scrollFrame.ScrollBarThickness = 6
+    scrollFrame.Parent = contentFrame
+    
+    local scrollList = Instance.new("UIListLayout")
+    scrollList.Padding = UDim.new(0, 8)
+    scrollList.SortOrder = Enum.SortOrder.LayoutOrder
+    scrollList.Parent = scrollFrame
+    
+    -- Tab definitions
+    local tabs = {
+        {name = "🌊 Farm", page = 1},
+        {name = "⚔️ Combat", page = 2},
+        {name = "🚀 Mastery", page = 3},
+        {name = "🎯 Auto", page = 4},
+        {name = "⚙️ Settings", page = 5},
+        {name = "ℹ️ Info", page = 6}
+    }
+    
+    local currentPage = 1
+    local tabButtons = {}
+    
+    -- Create tab buttons
+    for i, tab in ipairs(tabs) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1 / #tabs, -5, 1, -5)
+        btn.Position = UDim2.new((i-1) / #tabs, 5, 0, 0)
+        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        btn.BackgroundTransparency = 0.3
+        btn.Text = tab.name
+        btn.TextColor3 = Color3.fromRGB(220, 220, 240)
+        btn.TextSize = 14
+        btn.Font = Enum.Font.GothamSemibold
+        btn.Parent = tabContainer
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 8)
+        btnCorner.Parent = btn
+        
+        btn.MouseButton1Click:Connect(function()
+            currentPage = tab.page
+            for _, tb in pairs(tabButtons) do
+                tb.BackgroundTransparency = 0.3
+                tb.TextColor3 = Color3.fromRGB(220, 220, 240)
+            end
+            btn.BackgroundTransparency = 0
+            btn.TextColor3 = Color3.fromRGB(255, 215, 0)
+            
+            -- Clear and rebuild content
+            for _, child in pairs(scrollFrame:GetChildren()) do
+                if child:IsA("TextButton") or child:IsA("TextLabel") then
+                    child:Destroy()
+                end
+            end
+            
+            buildPage(currentPage)
+        end)
+        
+        table.insert(tabButtons, btn)
+        
+        if i == 1 then
+            btn.BackgroundTransparency = 0
+            btn.TextColor3 = Color3.fromRGB(255, 215, 0)
+        end
+    end
+    
+    -- Function to create toggle buttons
+    local function createToggle(parent, text, toggleKey, yPos)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, -10, 0, 45)
+        frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        frame.BackgroundTransparency = 0.3
+        frame.Parent = parent
+        
+        local frameCorner = Instance.new("UICorner")
+        frameCorner.CornerRadius = UDim.new(0, 8)
+        frameCorner.Parent = frame
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.7, 0, 1, 0)
+        label.Position = UDim2.new(0, 10, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextSize = 14
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Font = Enum.Font.Gotham
+        label.Parent = frame
+        
+        local toggleBtn = Instance.new("TextButton")
+        toggleBtn.Size = UDim2.new(0, 80, 0, 30)
+        toggleBtn.Position = UDim2.new(1, -90, 0, 7.5)
+        toggleBtn.BackgroundColor3 = toggles[toggleKey] and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(244, 67, 54)
+        toggleBtn.Text = toggles[toggleKey] and "ON" or "OFF"
+        toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        toggleBtn.TextSize = 12
+        toggleBtn.Font = Enum.Font.GothamBold
+        toggleBtn.Parent = frame
+        
+        local toggleCorner = Instance.new("UICorner")
+        toggleCorner.CornerRadius = UDim.new(0, 6)
+        toggleCorner.Parent = toggleBtn
+        
+        toggleBtn.MouseButton1Click:Connect(function()
+            toggles[toggleKey] = not toggles[toggleKey]
+            toggleBtn.BackgroundColor3 = toggles[toggleKey] and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(244, 67, 54)
+            toggleBtn.Text = toggles[toggleKey] and "ON" or "OFF"
+            
+            -- Start/stop coroutine for the feature
+            if toggles[toggleKey] then
+                local funcName = toggleKey
+                if toggleFeatures[funcName] then
+                    coroutine.wrap(toggleFeatures[funcName])()
+                end
+            end
+        end)
+        
+        return frame
+    end
+    
+    -- Feature coroutines mapping
+    local toggleFeatures = {
+        AutoFarm = autoFarm,
+        AutoFarmLevel = autoFarmLevel,
+        AutoCollect = autoCollect,
+        AutoRaid = autoRaid,
+        AutoSeaBeast = autoSeaBeast,
+        AutoAwakening = autoAwakening,
+        AutoEliteHunt = autoEliteHunt,
+        AutoChest = autoChest,
+        AutoBuso = autoBuso,
+        AutoObservation = autoObservation,
+        AutoDFMax = autoDFMax,
+        AutoBounty = autoBounty,
+        AutoKillPlayer = autoKillPlayer,
+        AutoEvoRace = autoEvoRace,
+        AutoFruitSnip = autoFruitSnip,
+        AutoMastery = autoMastery,
+        AutoGunMastery = autoGunMastery,
+        AutoSwordMastery = autoSwordMastery,
+        AutoFruitMastery = autoFruitMastery,
+        AutoFightingStyleMastery = autoFightingStyleMastery,
+        AutoBoneFarm = autoBoneFarm,
+        AutoFragFarm = autoFragFarm
+    }
+    
+    -- Build page content
+    function buildPage(page)
+        -- Clear existing
+        for _, child in pairs(scrollFrame:GetChildren()) do
+            if child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        
+        if page == 1 then -- Farm Page
+            createToggle(scrollFrame, "🌾 Auto Farm (Nearest NPC)", "AutoFarm", 0)
+            createToggle(scrollFrame, "🎯 Auto Farm (Level Based)", "AutoFarmLevel", 0)
+            createToggle(scrollFrame, "📦 Auto Collect (Fruits/Materials)", "AutoCollect", 0)
+            createToggle(scrollFrame, "💀 Auto Bone Farm", "AutoBoneFarm", 0)
+            createToggle(scrollFrame, "💎 Auto Fragment Farm", "AutoFragFarm", 0)
+            
+        elseif page == 2 then -- Combat Page
+            createToggle(scrollFrame, "⚔️ Auto Raid", "AutoRaid", 0)
+            createToggle(scrollFrame, "🐋 Auto Sea Beast", "AutoSeaBeast", 0)
+            createToggle(scrollFrame, "✨ Auto Awakening", "AutoAwakening", 0)
+            createToggle(scrollFrame, "👑 Auto Elite Hunt", "AutoEliteHunt", 0)
+            createToggle(scrollFrame, "🎁 Auto Chest Farm", "AutoChest", 0)
+            createToggle(scrollFrame, "🏆 Auto Bounty Hunter", "AutoBounty", 0)
+            createToggle(scrollFrame, "🗡️ Auto Kill Player", "AutoKillPlayer", 0)
+            
+        elseif page == 3 then -- Mastery Page
+            createToggle(scrollFrame, "⚔️ Auto All Mastery", "AutoMastery", 0)
+            createToggle(scrollFrame, "🔫 Auto Gun Mastery", "AutoGunMastery", 0)
+            createToggle(scrollFrame, "🗡️ Auto Sword Mastery", "AutoSwordMastery", 0)
+            createToggle(scrollFrame, "🍎 Auto Fruit Mastery", "AutoFruitMastery", 0)
+            createToggle(scrollFrame, "👊 Auto Fighting Style Mastery", "AutoFightingStyleMastery", 0)
+            
+        elseif page == 4 then -- Auto Page
+            createToggle(scrollFrame, "🍎 Auto Buy Fruit (Buddha)", "AutoBuyFruit", 0)
+            createToggle(scrollFrame, "🔮 Auto DF Max", "AutoDFMax", 0)
+            createToggle(scrollFrame, "👁️ Auto Observation Haki", "AutoObservation", 0)
+            createToggle(scrollFrame, "💪 Auto Buso Haki", "AutoBuso", 0)
+            createToggle(scrollFrame, "🧬 Auto Evolve Race", "AutoEvoRace", 0)
+            createToggle(scrollFrame, "🎯 Auto Fruit Sniping", "AutoFruitSnip", 0)
+            
+        elseif page == 5 then -- Settings Page
+            local healFrame = Instance.new("Frame")
+            healFrame.Size = UDim2.new(1, -10, 0, 45)
+            healFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            healFrame.BackgroundTransparency = 0.3
+            healFrame.Parent = scrollFrame
+            
+            local healCorner = Instance.new("UICorner")
+            healCorner.CornerRadius = UDim.new(0, 8)
+            healCorner.Parent = healFrame
+            
+            local healLabel = Instance.new("TextLabel")
+            healLabel.Size = UDim2.new(0.5, 0, 1, 0)
+            healLabel.Position = UDim2.new(0, 10, 0, 0)
+            healLabel.BackgroundTransparency = 1
+            healLabel.Text = "❤️ Auto Heal at %:"
+            healLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            healLabel.TextSize = 14
+            healLabel.TextXAlignment = Enum.TextXAlignment.Left
+            healLabel.Font = Enum.Font.Gotham
+            healLabel.Parent = healFrame
+            
+            local healSlider = Instance.new("TextBox")
+            healSlider.Size = UDim2.new(0, 60, 0, 30)
+            healSlider.Position = UDim2.new(1, -70, 0, 7.5)
+            healSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            healSlider.Text = tostring(settings.HealAt)
+            healSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+            healSlider.TextSize = 14
+            healSlider.Font = Enum.Font.Gotham
+            healSlider.Parent = healFrame
+            
+            local healCorner2 = Instance.new("UICorner")
+            healCorner2.CornerRadius = UDim.new(0, 6)
+            healCorner2.Parent = healSlider
+            
+            healSlider.FocusLost:Connect(function(enterPressed)
+                local num = tonumber(healSlider.Text)
+                if num then
+                    settings.HealAt = math.clamp(num, 1, 99)
+                    healSlider.Text = tostring(settings.HealAt)
+                else
+                    healSlider.Text = tostring(settings.HealAt)
+                end
+            end)
+            
+            -- Stats text
+            local statsFrame = Instance.new("Frame")
+            statsFrame.Size = UDim2.new(1, -10, 0, 80)
+            statsFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            statsFrame.BackgroundTransparency = 0.3
+            statsFrame.Parent = scrollFrame
+            
+            local statsCorner = Instance.new("UICorner")
+            statsCorner.CornerRadius = UDim.new(0, 8)
+            statsCorner.Parent = statsFrame
+            
+            local statsLabel = Instance.new("TextLabel")
+            statsLabel.Size = UDim2.new(1, -20, 0.5, 0)
+            statsLabel.Position = UDim2.new(0, 10, 0, 5)
+            statsLabel.BackgroundTransparency = 1
+            statsLabel.Text = "📊 Player Stats"
+            statsLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+            statsLabel.TextSize = 16
+            statsLabel.TextXAlignment = Enum.TextXAlignment.Left
+            statsLabel.Font = Enum.Font.GothamBold
+            statsLabel.Parent = statsFrame
+            
+            local statsValue = Instance.new("TextLabel")
+            statsValue.Size = UDim2.new(1, -20, 0.5, 0)
+            statsValue.Position = UDim2.new(0, 10, 0, 35)
+            statsValue.BackgroundTransparency = 1
+            statsValue.Text = "Loading..."
+            statsValue.TextColor3 = Color3.fromRGB(200, 200, 220)
+            statsValue.TextSize = 12
+            statsValue.TextXAlignment = Enum.TextXAlignment.Left
+            statsValue.TextWrapped = true
+            statsValue.Font = Enum.Font.Gotham
+            statsValue.Parent = statsFrame
+            
+            -- Update stats periodically
+            coroutine.wrap(function()
+                while true do
+                    wait(2)
+                    pcall(function()
+                        local level = player.Data.Level.Value
+                        local bounty = player.Data.Bounty.Value
+                        local frags = player.Data.Fragments.Value
+                        statsValue.Text = string.format("Level: %d | Bounty: %s | Fragments: %d", level, tostring(bounty), frags)
+                    end)
+                end
+            end)()
+            
+        elseif page == 6 then -- Info Page
+            local infoFrame = Instance.new("Frame")
+            infoFrame.Size = UDim2.new(1, -10, 0, 200)
+            infoFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            infoFrame.BackgroundTransparency = 0.3
+            infoFrame.Parent = scrollFrame
+            
+            local infoCorner = Instance.new("UICorner")
+            infoCorner.CornerRadius = UDim.new(0, 8)
+            infoCorner.Parent = infoFrame
+            
+            local infoText = Instance.new("TextLabel")
+            infoText.Size = UDim2.new(1, -20, 1, -20)
+            infoText.Position = UDim2.new(0, 10, 0, 10)
+            infoText.BackgroundTransparency = 1
+            infoText.Text = [[
+🐉 LUQUINHAS HUB 🐉
+Versão: 1.0
+Executor Detectado: ]] .. executor .. [[
+
+🔥 Funcionalidades:
+• Auto Farm (NPC e Level)
+• Auto Raid/Sea Beast
+• Auto Mastery (Todas as armas)
+• Auto Bounty Hunter
+• E muito mais!
+
+⚠️ DISCLAIMER:
+Este script é apenas para fins educacionais.
+O uso é por sua conta e risco.
+Não somos responsáveis por bans!
+
+📱 Discord: https://discord.gg/luquinhashub
+            ]]
+            infoText.TextColor3 = Color3.fromRGB(200, 200, 220)
+            infoText.TextSize = 13
+            infoText.TextXAlignment = Enum.TextXAlignment.Left
+            infoText.TextYAlignment = Enum.TextYAlignment.Top
+            infoText.Font = Enum.Font.Gotham
+            infoText.Parent = infoFrame
+        end
+    end
+    
+    -- Build initial page
+    buildPage(1)
+    
+    -- Drag functionality
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    userInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- ========== INICIALIZAÇÃO ==========
+local function init()
+    -- Wait for game to load
+    wait(2)
+    
+    -- Create UI
+    createUI()
+    
+    -- Auto stat distribution
+    coroutine.wrap(function()
+        while true do
+            wait(5)
+            pcall(function()
+                if settings.AutoStatPoints then
+                    local args = {[1] = "DistributeStats"}
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+                end
+            end)
+        end
+    end)()
+    
+    -- Print startup message
+    print("Luquinhas Hub carregado com sucesso!")
+    print("Executor detectado: " .. executor)
+end
+
+-- Start the script
+local success, err = pcall(init)
+if not success then
+    warn("Erro ao iniciar Luquinhas Hub: " .. tostring(err))
+end
